@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
-const app= require("./app");
+const app = require("./app");
 const port = process.env.PORT || 3977;
-const { API_VERSION,IP_SERVER, PORT_DB } = require("./config");
+const { API_VERSION, IP_SERVER, PORT_DB } = require("./config");
 
 
 mongoose.set("useFindAndModify", false);
@@ -19,6 +19,6 @@ mongoose.connect(`mongodb://${IP_SERVER}:${PORT_DB}/daviddiaz`, { useNewUrlParse
             console.log("############################");
             console.log(`http://${IP_SERVER}:${port}/api/${API_VERSION}/`);
             
-        })
+        });
     }
 });

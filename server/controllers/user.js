@@ -1,15 +1,17 @@
 const bcrypt = require("bcrypt-nodejs");
+const jwt = require("../services/jwt");
 const User = require("../models/user");
-const { use } = require("../routers/user");
+
 
 
 function signUp(req, res) {
-    const user = new User();
+    //console.log("esto es signup");
+   const user = new User();
 
     const {name, lastname, email, password, repeatPassword} = req.body;
     user.name = name;
     user.lastname = lastname;
-    user.email = email;
+    user.email = email.toLowerCase();
     user.role = "admin";
     user.active = false;
 
@@ -18,14 +20,12 @@ function signUp(req, res) {
     }else{
         if(password !== repeatPassword){
             res.status(404).send({message: "Las contraseñas no son iguales."});
-        }else {
-            
+        }else {            
             bcrypt.hash(password, null, null, function(err, hash) {
                 if(err){
                     res.status(500).send({message: "Error al encriptar la contraseña."});
                 }else {
                     user.password = hash;
-
                     user.save((err, userStored) => {
                         if(err){
                             res.status(500).send({message: " El usuario ya existe."});
@@ -36,17 +36,51 @@ function signUp(req, res) {
                                 res.status(200).send({user: userStored});
                             }
                         }
-                    })
+                    });
                 }
-            })
+            });
 
-            //res.status(200).send({message: "Usuario creado."})
         }
     }
+
+};
+
+function signIn(req, res) {
+    const params = req.body;
+    const email = params.email.toLowerCase();
+    const password = params.password;
+
+    User.findOne({email}, (err, userStored) => {
+        if(err) {
+            res.status(500).send({message: "Error del servidor."});
+        } else {
+            if(!userStored){
+                res.status(404).send({message: "Usuario no encontrado."});
+            }else {
+                bcrypt.compare(password, userStored.password, (err, check) => {
+                    if(err){
+                        res.status(500).send({message: "Error del servidor."});
+                    }else if(!check){
+                        res.status(404).send({message: "La contraseña es incorrecta."});
+                    }else {
+                        if(!userStored.active){
+                            res.status(200).send({code : 200, message: "El usuario no esta activo."});
+                        }else {
+                            res.status(200).send({
+                                accessToken: jwt.createAccessToken(userStored),
+                                refreshToken: jwt.createRefreshToken(userStored)
+                            });
+                        }
+                    }
+                });
+            }
+        }
+    });
 
 }
 
 
 module.export = {
-    signUp
+    signUp,
+    signIn 
 };
